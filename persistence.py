@@ -107,7 +107,7 @@ def calculatePersistence(fileSuffix, IDF, descriptive, persistenceAll):
 
     # Apply term-frequency, inverse document frequency weighting (TF-IDF)
     if IDF:
-        TDMbool = TDM
+        TDMbool = TDM.copy()
         TDMbool[TDMbool > 0] = 1
         # number of documents in which term i occurs
         n_i = np.sum(TDMbool, axis = 1)
