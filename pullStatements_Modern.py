@@ -1,49 +1,35 @@
-# Filename:    pullStatements.py
+#------------------------------------------------------------------------------#
+# Original file: pullStatements.py
 #
-# Description: This file downloads the FOMC statements from the Fed website,
-#              www.federalreserve.gov, and stores them as individual files
-#              in the directory 'statements'.
+# Description:   This file downloads the FOMC statements from the Fed website,
+#                www.federalreserve.gov, and stores them as individual files
+#                in the directory 'statements'.
+#                
+# Input:         A file in the directory 'data', called 'dates.sort.txt',
+#                that contains FOMC meeting dates in the format YYYYMMDD, one 
+#                date per line. Currently, this file contains dates through
+#                2025. If you run this and want more statements, you will need
+#                to add the dates manually from the FOMC website, and possibly
+#                edit the FOMCstatementURL function.
+#                
+# Output:        Files titles 'statements.fomc.YYYYMMDD', each of which contains
+#                an FOMC statement.
+#                
+# Author:        Miguel Acosta
 #
-# Input:       A file in the directory 'data', called 'dates.sort.txt',
-#              that contains FOMC meeting dates in the format YYYYMMDD, one date
-#              per line. Currently, this file only contains dates through
-#              2015. If you run this and want more statements, you will need
-#              to add the dates manually from the FOMC website, and possibly
-#              edit the FOMCstatementURL function.
+# Contributors:  Eric Chu
 #
-# Output:      Files titles 'statements.fomc.YYYYMMDD', each of which contains
-#              an FOMC statement.
-#
-# Author:      Miguel Acosta
-#              www.acostamiguel.com
-#
-# Last edited: January 21, 2015
-
+# Last edited:   January 5, 2026
+#                See change log at bottom of file.
 #------------------------------------------------------------------------------#
 
-# Modified program:    pullStatements_Modern.py
-
-# Modified by Eric Chu, October 15 2025
-
-# Main edits:
-# 1) Updated dates since 2016 ("dates_sort_modified.txt")
-# 2) Updated URL patterns to reflect changes in the Federal Reserve's website ("Modern" vs "Legacy")
-# 3) Updated text extraction patterns to handle changes in Modern statement formatting
-#    (e.g., "For Immediate Release" to "For release at ...", and
-#    "Monetary Policy" to "Last Update: ...")
-# 4) Removed the "Share" section that appears in Modern statements
-# 5) Added progress tracking (re-scraping only those missing dates/files) with some messages
-
-# Run this one-line script to pull the FOMC statements:
-'''
-python pullStatements_Modern.py
-'''
 
 
 #--------------------------------- IMPORTS -----------------------------------#
 from   bs4    import BeautifulSoup
-from   urllib.request import urlopen  # Updated for Python 3
+from   urllib.request import urlopen
 from   time   import sleep
+from urllib.request import Request
 import re,csv,os
 
 #-------------------------DEFINE GLOBAL VARIABLES-----------------------------#
@@ -68,19 +54,25 @@ def FOMCstatementURL(date):
     if dateInt == 20081216:
         urlout = 'http://www.federalreserve.gov/newsevents/' + \
                  'pressreleases/monetary' + date + 'b.htm'
-    ## Case 1: "https://www.federalreserve.gov/boarddocs/press/general/1999/19990518/"
-    elif dateInt >= 19990501 and dateInt < 20020331:
+    ## Case 1: Pre-1996
+    if dateInt < 19960101:
+        urlout = 'https://www.federalreserve.gov/fomc/' + date + 'default.htm'
+    ## Case 2: 1996 (only one statement)
+    elif dateInt >= 19960101 and dateInt < 19970101:
+        urlout = 'https://www.federalreserve.gov/fomc/' + date + 'DEFAULT.htm'
+    ## Case 3: "https://www.federalreserve.gov/boarddocs/press/general/1999/19990518/"
+    elif dateInt >= 19970101 and dateInt < 20020331:
         urlout = 'http://www.federalreserve.gov/boarddocs/' + \
                  'press/general/' + year + '/' + date + '/'
-    ## Case 2: "https://www.federalreserve.gov/boarddocs/press/monetary/2002/20020507/"
+    ## Case 4: "https://www.federalreserve.gov/boarddocs/press/monetary/2002/20020507/"
     elif dateInt >= 20020331 and dateInt < 20030000:
         urlout = 'http://www.federalreserve.gov/boarddocs/press/' + \
                  'monetary/' + year + '/' + date + '/'
-    ## Case 3: "https://www.federalreserve.gov/boarddocs/press/monetary/2004/20040810/default.htm"
+    ## Case 5: "https://www.federalreserve.gov/boarddocs/press/monetary/2004/20040810/default.htm"
     elif dateInt >= 20030000 and dateInt < 20060000:
         urlout = 'http://www.federalreserve.gov/boarddocs/press/' + \
                  'monetary/' + year + '/' + date + '/default.htm'
-    ## Case 4: "https://www.federalreserve.gov/newsevents/pressreleases/monetary20250917a.htm"
+    ## Case 6: "https://www.federalreserve.gov/newsevents/pressreleases/monetary20250917a.htm"
     elif dateInt >= 20060000:
         urlout = 'https://www.federalreserve.gov/newsevents/pressreleases/' + \
                  'monetary' + date + 'a.htm'
@@ -97,7 +89,8 @@ def FOMCstatementURL(date):
 def getStatement(mtgDate):
     url = FOMCstatementURL(mtgDate)
     try:
-        html = urlopen(url).read()
+        hdr = { 'User-Agent' : 'Mozilla/5.0 (Windows NT 6.1; Win64; x64)'}
+        html = urlopen(Request(url,headers=hdr)).read()
         soup = BeautifulSoup(html)
         allText = soup.get_text(" ")
         
@@ -118,7 +111,7 @@ def getStatement(mtgDate):
             return ""
             
         statementText = allText[startLoc:]
-        
+
         # End patterns: Check legacy patterns first, then modern ones
         end_patterns = [
             r"[0-9]{4}\s[Mm]onetary\s[Pp]olicy",  # Legacy pattern (1999-2015) e.g., "2015 Monetary Policy"
@@ -189,18 +182,18 @@ def main():
     
     releaseDates = [line.rstrip() for line in open(dates_file, 'r')]
     print(f"Found {len(releaseDates)} dates to process") # For porgress tracking
-    
+
     # Check which dates already have files and skip them
     # This is better for progress tracking
-    if os.path.exists(outdir):
-        existing_files = {f.replace('fomc_statement_raw_', '').replace('.txt', '') 
-                         for f in os.listdir(outdir) if f.endswith('.txt')}
-        # If 20070628 exists, also mark 20070618 as existing
-        if '20070628' in existing_files:
-            existing_files.add('20070618')
-        releaseDates = [d for d in releaseDates if d not in existing_files] # Added a skip feature
-        print(f"Skipping {len(existing_files)} already pulled, processing {len(releaseDates)} remaining") # For porgress tracking
-    
+    os.makedirs(outdir, exist_ok=True)
+    existing_files = {re.findall(r'[0-9]{8}',f)[0]
+                      for f in os.listdir(outdir) if f.endswith('.txt')}
+    # If 20070628 exists, also mark 20070618 as existing
+    if '20070628' in existing_files:
+        existing_files.add('20070618')
+    releaseDates = [d for d in releaseDates if d not in existing_files] # Added a skip feature
+    print(f"Skipping {len(existing_files)} already pulled, processing {len(releaseDates)} remaining") # For progress tracking
+
     for releaseDate in releaseDates:
         print(f"\nProcessing date: {releaseDate}") # For porgress tracking
         data = getStatement(releaseDate)
@@ -224,3 +217,36 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+#------------------------------------------------------------------------------#
+# Change log                                                                   #
+#------------------------------------------------------------------------------#
+# First public version: January 21, 2015
+# 
+# Modification date: October 15, 2025
+# 
+# Modified by Eric Chu
+#
+#    Main edits:
+#    1) Updated dates since 2016 ("dates_sort_modified.txt")
+#    2) Updated URL patterns to reflect changes in the Federal Reserve's
+#       website ("Modern" vs "Legacy")
+#    3) Updated text extraction patterns to handle changes in Modern statement 
+#       formatting (e.g., "For Immediate Release" to "For release at ...", and
+#       "Monetary Policy" to "Last Update: ...")
+#    4) Removed the "Share" section that appears in Modern statements
+#    5) Added progress tracking (re-scraping only those missing dates/files)
+#       with some messages
+#
+#
+# Modification date: January 5, 2026
+#
+# Modified by Miguel Acosta
+#
+#    1) Added pre-1999 statements (note: added an unscheduled meeting 10/15/1998)
+#    2) Added remaining 2025 statements
+#    3) Added header to url request
+#    4) Modification to missing dates/files logic 
+#
+#------------------------------------------------------------------------------#    
