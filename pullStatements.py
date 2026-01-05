@@ -172,13 +172,9 @@ def getStatement(mtgDate):
 #   that date. It then prints out the results to individual files.
 #-----------------------------------------------------------------------------#
 
-# Main eits:
-# Added more annoucement dates with 'dates_sort_modified.txt': post 2016
-# Added progress tracking & skip feature (re-scraping only those missing dates/files)
-
 def main():
     
-    dates_file = os.path.join('data','dates_sort_modified.txt') # More fomc announcment dates in this new file
+    dates_file = os.path.join('data','dates.sort.txt') # More fomc announcment dates in this new file
     
     releaseDates = [line.rstrip() for line in open(dates_file, 'r')]
     print(f"Found {len(releaseDates)} dates to process") # For porgress tracking
@@ -229,7 +225,7 @@ if __name__ == "__main__":
 # Modified by Eric Chu
 #
 #    Main edits:
-#    1) Updated dates since 2016 ("dates_sort_modified.txt")
+#    1) Updated dates since 2016
 #    2) Updated URL patterns to reflect changes in the Federal Reserve's
 #       website ("Modern" vs "Legacy")
 #    3) Updated text extraction patterns to handle changes in Modern statement 
