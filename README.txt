@@ -1,4 +1,4 @@
-These files can be used to replicate Acosta and Meade's (2015) "Hanging on
+These files can be used to update Acosta and Meade's (2015) "Hanging on
 every word: Semantic analysis of the FOMC's postmeeting statement." There
 are four steps in reproducing the results:
  
@@ -6,6 +6,8 @@ are four steps in reproducing the results:
     2. clean the statements and create term-document matrices for analysis,
     3. perform linguistic analysis, count words and phrases, and report results.
 
+This repository is occasionally updated to include new FOMC statements.
+Exact replication for the FEDS note can be found at www.acostamiguel.com. 
 
 Each step (and substep above) is performed by a single Python script.
 Running the scripts in order will leave you with the results that we

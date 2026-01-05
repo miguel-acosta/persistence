@@ -246,6 +246,7 @@ if __name__ == "__main__":
 #
 #    1) Added pre-1999 statements (note: added an unscheduled meeting 10/15/1998)
 #    2) Added remaining 2025 statements
-#    2) Added header to url request 
+#    3) Added header to url request
+#    4) Modification to missing dates/files logic 
 #
 #------------------------------------------------------------------------------#    
